@@ -84,6 +84,18 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
+import android.app.Activity;
+import android.Manifest;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
 
@@ -151,6 +163,7 @@ public class InAppBrowser extends CordovaPlugin {
     private boolean fullscreen = true;
     private String[] allowedSchemes;
     private InAppBrowserClient currentClient;
+    private String mCM;
 
     /**
      * Executes the request and returns PluginResult.
@@ -922,25 +935,102 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView.setId(Integer.valueOf(6));
                 // File Chooser Implemented ChromeClient
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
-                    public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams)
-                    {
-                        LOG.d(LOG_TAG, "File Chooser 5.0+");
-                        // If callback exists, finish it.
-                        if(mUploadCallback != null) {
-                            mUploadCallback.onReceiveValue(null);
-                        }
-                        mUploadCallback = filePathCallback;
+					public boolean onShowFileChooser(WebView webView,
+							ValueCallback<Uri[]> filePathCallback,
+							WebChromeClient.FileChooserParams fileChooserParams)
+					{
+						if (Build.VERSION.SDK_INT >= 23 && (cordova.getActivity()
+								.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+								!= PackageManager.PERMISSION_GRANTED || cordova.getActivity()
+								.checkSelfPermission(Manifest.permission.CAMERA)
+								!= PackageManager.PERMISSION_GRANTED))
+						{
+							cordova.getActivity().requestPermissions(
+									new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE,
+											Manifest.permission.CAMERA }, 1);
+						}
 
-                        // Create File Chooser Intent
-                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-                        content.addCategory(Intent.CATEGORY_OPENABLE);
-                        content.setType("*/*");
+						// If callback exists, finish it.
+						if (mUploadCallback != null)
+						{
+							mUploadCallback.onReceiveValue(null);
+						}
+						mUploadCallback = filePathCallback;
 
-                        // Run cordova startActivityForResult
-                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
-                        return true;
-                    }
-                });
+						Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+						if (takePictureIntent
+								.resolveActivity(cordova.getActivity().getPackageManager()) != null)
+						{
+
+							File photoFile = null;
+							try
+							{
+								photoFile = createImageFile();
+							}
+							catch (IOException ex)
+							{
+								Log.e(LOG_TAG, "Image file creation failed", ex);
+							}
+							if (photoFile != null)
+							{
+								mCM = "file:" + photoFile.getAbsolutePath();
+								Log.d(LOG_TAG, mCM);
+								takePictureIntent.putExtra("PhotoPath", mCM);
+								takePictureIntent
+										.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+							}
+							else
+							{
+								takePictureIntent = null;
+							}
+						}
+						// Create File Chooser Intent
+						Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+						contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+						contentSelectionIntent.setType("*/*");
+						Intent[] intentArray;
+						if (takePictureIntent != null)
+						{
+							intentArray = new Intent[] { takePictureIntent };
+						}
+						else
+						{
+							intentArray = new Intent[0];
+						}
+
+						Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+						chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+						chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+
+						// Run cordova startActivityForResult
+						cordova.startActivityForResult(InAppBrowser.this, chooserIntent,
+								FILECHOOSER_REQUESTCODE);
+
+						return true;
+					}
+
+					private File createImageFile() throws IOException
+					{
+						@SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat(
+								"yyyyMMdd_HHmmss").format(new Date());
+						String imageFileName = "img_" + timeStamp + "_";
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+						{
+							// let's use the new api for accessing external storage on 29 onwards
+							File storageDir = Environment.getExternalStoragePublicDirectory(
+									Environment.DIRECTORY_PICTURES);
+							return new File(storageDir, imageFileName + ".jpg");
+						}
+						else
+						{
+							// was working well on older droids so let's leave it as is.
+							File storageDir = Environment.getExternalStoragePublicDirectory(
+									Environment.DIRECTORY_PICTURES);
+							return File.createTempFile(imageFileName, ".jpg", storageDir);
+						}
+					}
+				});
                 currentClient = new InAppBrowserClient(thatWebView, edittext, beforeload);
                 inAppWebView.setWebViewClient(currentClient);
                 WebSettings settings = inAppWebView.getSettings();
@@ -1111,12 +1201,29 @@ public class InAppBrowser extends CordovaPlugin {
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         LOG.d(LOG_TAG, "onActivityResult");
         // If RequestCode or Callback is Invalid
-        if(requestCode != FILECHOOSER_REQUESTCODE || mUploadCallback == null) {
-            super.onActivityResult(requestCode, resultCode, intent);
-            return;
-        }
-        mUploadCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
-        mUploadCallback = null;
+        if (requestCode != FILECHOOSER_REQUESTCODE || mUploadCallback == null)
+		{
+			super.onActivityResult(requestCode, resultCode, intent);
+			return;
+		}
+
+		Uri[] results = null;
+            //Check if response is positive
+		if (intent == null || intent.getData() == null)
+		{
+			//Capture Photo if no image available
+			if (mCM != null)
+			{
+				results = new Uri[] { Uri.parse(mCM) };
+			}
+		}
+		else
+		{
+			results = WebChromeClient.FileChooserParams.parseResult(resultCode, intent);
+		}
+
+		mUploadCallback.onReceiveValue(results);
+		mUploadCallback = null;
     }
 
     /**

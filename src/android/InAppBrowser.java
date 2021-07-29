@@ -956,6 +956,7 @@ public class InAppBrowser extends CordovaPlugin {
 							mUploadCallback.onReceiveValue(null);
 						}
 						mUploadCallback = filePathCallback;
+						mCM = null;
 
 						Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
@@ -1191,6 +1192,39 @@ public class InAppBrowser extends CordovaPlugin {
         }
     }
 
+	/**
+	 * Deletes the file at the given path
+	 *
+	 * @param {String} path - The uri string location of the file
+	 */
+	private void deleteFilePath(String path) {
+    	if (path != null) {
+			File file;
+			if (path.startsWith("file:"))
+			{
+				file = new File(path.replace("file:", ""));
+			}
+			else
+			{
+				file = new File(path);
+			}
+			if (file.exists())
+			{
+				try {
+					file.delete();
+					file.getAbsoluteFile().delete();
+					if (file.exists())
+					{
+						cordova.getActivity().getApplicationContext().deleteFile(file.getName());
+					}
+				} catch (Exception e) {
+					// Couldn't delete file...
+					Log.e(LOG_TAG, "Unable to delete", e);
+				}
+			}
+		}
+	}
+
     /**
      * Receive File Data from File Chooser
      *
@@ -1212,18 +1246,22 @@ public class InAppBrowser extends CordovaPlugin {
 		if (intent == null || intent.getData() == null)
 		{
 			//Capture Photo if no image available
-			if (mCM != null)
+			if (mCM != null && resultCode == Activity.RESULT_OK)
 			{
 				results = new Uri[] { Uri.parse(mCM) };
+			} else {
+				deleteFilePath(mCM);
 			}
 		}
 		else
 		{
 			results = WebChromeClient.FileChooserParams.parseResult(resultCode, intent);
+			deleteFilePath(mCM);
 		}
 
 		mUploadCallback.onReceiveValue(results);
 		mUploadCallback = null;
+		mCM = null;
     }
 
     /**

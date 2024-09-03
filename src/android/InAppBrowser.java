@@ -1115,9 +1115,12 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setBuiltInZoomControls(showZoomControls);
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
-                
+
+                 // Ignore the system font size override, since that does not apply to things based on font size (padding, margin, etc.)
+                settings.setTextZoom(100);
+
                 // download event
-                
+
                 inAppWebView.setDownloadListener(
                     new DownloadListener(){
                         public void onDownloadStart(
@@ -1138,7 +1141,7 @@ public class InAppBrowser extends CordovaPlugin {
                             }
                         }
                     }
-                );        
+                );
 
                 // Add postMessage interface
                 class JsObject {

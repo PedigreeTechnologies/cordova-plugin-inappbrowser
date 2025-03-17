@@ -478,18 +478,13 @@ public class InAppBrowser extends CordovaPlugin {
             Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
             contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
             contentSelectionIntent.setType("*/*");
-            Intent[] intentArray;
-            if (takePictureIntent != null)
-            {
-                intentArray = new Intent[] { takePictureIntent };
-            }
-            else
-            {
-                intentArray = new Intent[0];
-            }
 
-            Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-            chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+            Intent[] intentArray = takePictureIntent != null ? new Intent[]{takePictureIntent} : new Intent[0];
+            Intent chooserIntent =  new Intent(Intent.ACTION_CHOOSER);
+            chooserIntent.putExtra(
+                    Intent.EXTRA_INTENT,
+                    takePictureIntent != null && fileChooserParams.isCaptureEnabled() ? new Intent() : contentSelectionIntent
+            );
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
             // Run cordova startActivityForResult

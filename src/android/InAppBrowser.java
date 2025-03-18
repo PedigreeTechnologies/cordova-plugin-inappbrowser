@@ -481,6 +481,7 @@ public class InAppBrowser extends CordovaPlugin {
 
             Intent[] intentArray = takePictureIntent != null ? new Intent[]{takePictureIntent} : new Intent[0];
             Intent chooserIntent =  new Intent(Intent.ACTION_CHOOSER);
+            // Use an empty intent when requesting only an image capture, otherwise an uri/file accessed out of app exception is thrown
             chooserIntent.putExtra(
                     Intent.EXTRA_INTENT,
                     takePictureIntent != null && fileChooserParams.isCaptureEnabled() ? new Intent() : contentSelectionIntent

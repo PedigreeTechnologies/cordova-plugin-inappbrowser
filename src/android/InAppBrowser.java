@@ -64,6 +64,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.util.Log;
 import android.Manifest;
+import androidx.core.content.FileProvider;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.Config;
@@ -466,8 +467,9 @@ public class InAppBrowser extends CordovaPlugin {
                     mCM = "file:" + photoFile.getAbsolutePath();
                     Log.d(LOG_TAG, mCM);
                     takePictureIntent.putExtra("PhotoPath", mCM);
-                    takePictureIntent
-                            .putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                    Context context = cordova.getActivity().getApplicationContext();
+                    Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".cdv.core.file.provider", photoFile);
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
                 }
                 else
                 {
@@ -489,8 +491,7 @@ public class InAppBrowser extends CordovaPlugin {
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
             // Run cordova startActivityForResult
-            cordova.startActivityForResult(InAppBrowser.this, chooserIntent,
-                    FILECHOOSER_REQUESTCODE);
+            cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FILECHOOSER_REQUESTCODE);
         }
         else
         {
@@ -513,10 +514,7 @@ public class InAppBrowser extends CordovaPlugin {
         String imageFileName = "img_" + timeStamp + "_";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
         {
-            // let's use the new api for accessing external storage on 29 onwards
-            File storageDir = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_PICTURES);
-            return new File(storageDir, imageFileName + ".jpg");
+            return  File.createTempFile(imageFileName, ".jpg", cordova.getActivity().getApplicationContext().getCacheDir());
         }
         else
         {

@@ -481,14 +481,21 @@ public class InAppBrowser extends CordovaPlugin {
             contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
             contentSelectionIntent.setType("*/*");
 
-            Intent[] intentArray = takePictureIntent != null ? new Intent[]{takePictureIntent} : new Intent[0];
             Intent chooserIntent =  new Intent(Intent.ACTION_CHOOSER);
-            // Use an empty intent when requesting only an image capture, otherwise an uri/file accessed out of app exception is thrown
-            chooserIntent.putExtra(
-                    Intent.EXTRA_INTENT,
-                    takePictureIntent != null && fileChooserParams.isCaptureEnabled() ? new Intent() : contentSelectionIntent
-            );
-            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+
+            if (takePictureIntent != null && fileChooserParams.isCaptureEnabled())
+            {
+                chooserIntent.putExtra(Intent.EXTRA_INTENT, takePictureIntent);
+            }
+            else
+            {
+                chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+
+                if (takePictureIntent != null)
+                {
+                     chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{takePictureIntent});
+                }
+            }
 
             // Run cordova startActivityForResult
             cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FILECHOOSER_REQUESTCODE);

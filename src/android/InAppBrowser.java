@@ -476,11 +476,6 @@ public class InAppBrowser extends CordovaPlugin {
                     takePictureIntent = null;
                 }
             }
-            // Create File Chooser Intent
-            Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
-            contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-            contentSelectionIntent.setType("*/*");
-
             Intent chooserIntent =  new Intent(Intent.ACTION_CHOOSER);
 
             if (takePictureIntent != null && fileChooserParams.isCaptureEnabled())
@@ -489,6 +484,11 @@ public class InAppBrowser extends CordovaPlugin {
             }
             else
             {
+                // Create File Chooser Intent
+                Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                contentSelectionIntent.setType("*/*");
+
                 chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
 
                 if (takePictureIntent != null)

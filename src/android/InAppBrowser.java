@@ -168,6 +168,7 @@ public class InAppBrowser extends CordovaPlugin {
 
     private final boolean isTiramisuOrNewer = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
     private final boolean isMOrNewer = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
+    private final boolean isN1OrNewer = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1;
 
     private WebView lastWebView;
     private ValueCallback<Uri[]> lastFilePathCallback;
@@ -467,9 +468,16 @@ public class InAppBrowser extends CordovaPlugin {
                     mCM = "file:" + photoFile.getAbsolutePath();
                     Log.d(LOG_TAG, mCM);
                     takePictureIntent.putExtra("PhotoPath", mCM);
-                    Context context = cordova.getActivity().getApplicationContext();
-                    Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".cdv.core.file.provider", photoFile);
-                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+                    if (isN1OrNewer)
+                    {
+                        Context context = cordova.getActivity().getApplicationContext();
+                        Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".cdv.core.file.provider", photoFile);
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+                    }
+                    else
+                    {
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                    }
                 }
                 else
                 {
@@ -519,7 +527,7 @@ public class InAppBrowser extends CordovaPlugin {
         @SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat(
                 "yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "img_" + timeStamp + "_";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        if (isN1OrNewer)
         {
             return  File.createTempFile(imageFileName, ".jpg", cordova.getActivity().getApplicationContext().getCacheDir());
         }

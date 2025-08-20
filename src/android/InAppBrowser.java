@@ -399,6 +399,15 @@ public class InAppBrowser extends CordovaPlugin {
      * Stop listener.
      */
     public void onDestroy() {
+        if (dialog != null)
+        {
+            if (dialog.isShowing())
+            {
+                dialog.dismiss();
+            }
+
+            dialog = null;
+        }
         closeDialog();
     }
 
@@ -696,7 +705,11 @@ public class InAppBrowser extends CordovaPlugin {
                     // NB: wait for about:blank before dismissing
                     public void onPageFinished(WebView view, String url) {
                         if (dialog != null && !cordova.getActivity().isFinishing()) {
-                            dialog.dismiss();
+                            if (dialog.isShowing())
+                            {
+                                dialog.dismiss();
+                            }
+
                             dialog = null;
                         }
                     }

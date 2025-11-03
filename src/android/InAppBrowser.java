@@ -442,6 +442,8 @@ public class InAppBrowser extends CordovaPlugin {
                 try
                 {
                     // Only delete the files we created, ignore the current temp file since we are expecting a response from the camera intent
+                    // Older versions of android don't set mCM when waiting for the camera response, so ignore any recently created/modified files
+                    // so we don't accidentally delete the current temp file.
                     if (file.getName().startsWith("img_") && (mCM == null ? file.lastModified() < (System.currentTimeMillis() - 300000L) : !mCM.substring(mCM.lastIndexOf("/") + 1).equals(file.getName())))
                     {
                         file.delete();

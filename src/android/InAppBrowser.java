@@ -442,7 +442,7 @@ public class InAppBrowser extends CordovaPlugin {
                 try
                 {
                     // Only delete the files we created, ignore the current temp file since we are expecting a response from the camera intent
-                    if (file.getName().startsWith("img_") && (mCM == null || !mCM.substring(mCM.lastIndexOf("/") + 1).equals(file.getName())))
+                    if (file.getName().startsWith("img_") && (mCM == null ? file.lastModified() < (System.currentTimeMillis() - 300000L) : !mCM.substring(mCM.lastIndexOf("/") + 1).equals(file.getName())))
                     {
                         file.delete();
                     }

@@ -367,6 +367,15 @@ public class InAppBrowser extends CordovaPlugin {
     }
 
     /**
+     * Called when the system is about to start a new activity.
+     */
+    @Override
+    public void onStart()
+    {
+        deleteTempImageFiles();
+    }
+
+    /**
      * Called when the view navigates.
      */
     @Override
@@ -394,10 +403,17 @@ public class InAppBrowser extends CordovaPlugin {
         }
     }
 
+    @Override
+    public void onStop()
+    {
+        deleteTempImageFiles();
+    }
+
     /**
      * Called by AccelBroker when listener is to be shut down.
      * Stop listener.
      */
+    @Override
     public void onDestroy() {
         if (dialog != null)
         {
@@ -409,6 +425,34 @@ public class InAppBrowser extends CordovaPlugin {
             dialog = null;
         }
         closeDialog();
+    }
+
+    /**
+     * Deletes any temp file that is not currently in-use
+     */
+    private void deleteTempImageFiles()
+    {
+        File folder = getStorageDirectory();
+        File[] files = folder == null ? null : folder.listFiles();
+
+        if (files != null)
+        {
+            for (final File file : files)
+            {
+                try
+                {
+                    // Only delete the files we created, ignore the current temp file since we are expecting a response from the camera intent
+                    if (file.getName().startsWith("img_") && (mCM == null || !mCM.substring(mCM.lastIndexOf("/") + 1).equals(file.getName())))
+                    {
+                        file.delete();
+                    }
+                }
+                catch (Exception e)
+                {
+                   Log.e(LOG_TAG, "Unable to delete file: ", e);
+                }
+            }
+        }
     }
 
     /**
@@ -531,22 +575,37 @@ public class InAppBrowser extends CordovaPlugin {
         }
     }
 
-    private File createImageFile() throws IOException
+    /**
+     * Determines the storage directory to use based on the android version
+     *
+     * @return The storage directory to use
+     */
+    private File getStorageDirectory()
     {
-        @SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat(
-                "yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "img_" + timeStamp + "_";
-        if (isN1OrNewer)
+         if (isN1OrNewer)
         {
-            return  File.createTempFile(imageFileName, ".jpg", cordova.getActivity().getApplicationContext().getCacheDir());
+            return  cordova.getActivity().getApplicationContext().getCacheDir();
         }
         else
         {
-            // was working well on older droids so let's leave it as is.
-            File storageDir = Environment.getExternalStoragePublicDirectory(
+            return Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_PICTURES);
-            return File.createTempFile(imageFileName, ".jpg", storageDir);
         }
+    }
+
+    /**
+     * Creates a temporary image file in the standard storage directory
+     *
+     * @return The temporary image file
+     * @throws IOException When the file fails to be created
+     */
+    private File createImageFile() throws IOException
+    {
+        @SuppressLint("SimpleDateFormat")
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "img_" + timeStamp + "_";
+
+        return  File.createTempFile(imageFileName, ".jpg", getStorageDirectory());
     }
 
     /**

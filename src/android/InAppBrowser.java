@@ -494,9 +494,7 @@ public class InAppBrowser extends CordovaPlugin {
         mUploadCallback = filePathCallback;
 
         // Check granted permissions, if camera denied show the original picker
-        if ((isTiramisuOrNewer
-            && cordova.hasPermission(Manifest.permission.CAMERA)
-                && cordova.hasPermission(Manifest.permission.READ_MEDIA_IMAGES))
+        if ((isTiramisuOrNewer && cordova.hasPermission(Manifest.permission.CAMERA))
             || (isMOrNewer
                 && !isTiramisuOrNewer
                 && cordova.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -1164,13 +1162,10 @@ public class InAppBrowser extends CordovaPlugin {
                         lastFilePathCallback = filePathCallback;
                         lastFileChooserParams = fileChooserParams;
 
-                        if (isTiramisuOrNewer
-                            && (!cordova.hasPermission(Manifest.permission.CAMERA)
-                                || !cordova.hasPermission(Manifest.permission.READ_MEDIA_IMAGES)))
+                        if (isTiramisuOrNewer && !cordova.hasPermission(Manifest.permission.CAMERA))
                         {
                             cordova.requestPermissions(getInAppBrowser(), FILE_CHOOSER, new String[] {
-                                Manifest.permission.CAMERA,
-                                Manifest.permission.READ_MEDIA_IMAGES
+                                Manifest.permission.CAMERA
                            });
                         }
                         else if (isMOrNewer

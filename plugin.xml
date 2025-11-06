@@ -46,11 +46,6 @@
             </feature>
         </config-file>
 
-        <config-file after="uses-permission" parent="/manifest" target="AndroidManifest.xml">
-			 <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-		</config-file>
-
-
         <source-file src="src/android/InAppBrowser.java" target-dir="src/org/apache/cordova/inappbrowser" />
         <source-file src="src/android/InAppBrowserDialog.java" target-dir="src/org/apache/cordova/inappbrowser" />
         <source-file src="src/android/InAppChromeClient.java" target-dir="src/org/apache/cordova/inappbrowser" />
